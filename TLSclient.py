@@ -1,6 +1,8 @@
 import socket
 from Cryptodome.Hash import SHA256
 from Cryptodome.Cipher import AES
+from math import gcd
+
 
 MSG_DELIMITER = "\r\n"
 
@@ -8,6 +10,15 @@ HOST = "netsec.unipr.it"
 PORT = 7022
 TIMEOUT = 10
 delimiter = "\r\n"
+
+
+def phi(n):
+    totient = 0        
+    for k in range(1, n + 1):
+        if gcd(n, k) == 1:
+            totient += 1
+    return totient
+
 
 def unpad(padded : bytes) -> bytes:
 	size= len(padded)
@@ -21,7 +32,7 @@ def add_padding(cleartext):
     
 def error_checking(data, array_data):
     if array_data[0] == "ERROR":
-        print("\u2708 An error occurred during the handshake!")
+        print("\u274C An error occurred during the handshake!")
         print(data)
         s.close()
         exit(-1)
@@ -44,7 +55,6 @@ print("xc:",xc)
 print("\n")
 yc = pow(g,xc,p)
 print("yc:",yc)
-
 print("\n")
 print(f"...Connecting to {HOST}:{PORT}...")
 s = socket.create_connection((HOST, PORT), TIMEOUT)
@@ -86,12 +96,10 @@ array_data = data.split()
 error_checking(data,array_data)
 modulus = int(array_data[2])
 e = int(array_data[1])
-d = pow(e,-1,modulus)
+# d = pow(e,-1,phi(modulus)) too much slow to compute it
 print("e:", e)
 print("\n")
 print("modulus:", modulus)
-print("\n")
-print("d:", d)
 print("\n")
 
 
@@ -112,9 +120,9 @@ print("hashed_certificate_received:", hashed_cert.to_bytes(32,'big').hex())
 
 #computing SHA256(bytes(Yc||Ys)) to verify the received certificate
 h = SHA256.new()
-hash_key = str(yc) + str(ys)
-hash_key = bytes(hash_key, encoding="ASCII")
-h.update(hash_key)
+hash = str(yc) + str(ys)
+hash = bytes(hash, encoding="ASCII")
+h.update(hash)
 
 print("hashed_certificate_calculated:",h.hexdigest())
 print("\n")
